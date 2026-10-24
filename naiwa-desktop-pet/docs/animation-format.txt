@@ -1,0 +1,56 @@
+Laugh animation inputs (build.ps1 -AssetsDir ...):
+
+1. Preferred: laugh_frames/frame000.png, frame001.png, ...
+   Frames are sorted by their zero-padded filename. They must all use the same
+   pixel dimensions and baseline. Transparent PNGs are embedded in the EXE.
+   Default playback is 12 fps, source motion only, looping for 4.2 seconds.
+
+2. Fallback: laugh_strip.png, a horizontal strip with four equal cells.
+   Default playback is 7.142857 fps, with extra procedural sway and squish.
+
+3. Last fallback: laugh.png, a single transparent image with procedural motion.
+
+Optional metadata: laugh_animation.txt and/or laugh_frames/animation.txt.
+The per-folder animation.txt overrides root metadata. Example:
+
+fps=12
+duration=4.2
+stripFrames=4
+crop=shared
+motion=source
+blend=auto
+
+fps: 1 through 60.
+duration: total time before returning to idle, 1 through 30 seconds.
+stripFrames: equal horizontal strip cell count, 1 through 120.
+crop=shared: crop every frame using the union of every frame's alpha bounds.
+crop=none: preserve the entire common frame canvas (no crop).
+motion=source: use only the supplied frame motion.
+motion=enhance: add procedural sway, squish, and bounce to the supplied frames.
+blend=auto: source motion uses no crossfade; enhanced motion uses a short crossfade.
+blend=none: never crossfade frames. blend=crossfade: force short crossfades.
+
+Pose images pose1.png through pose8.png are required. Idle is pose1, ordinary
+interactions are poses2..8, and the laugh state follows pose8 when clicking.
+The build embeds all assets; the shipped EXE does not require an assets folder.
+
+Optional sound: laugh_sound.mp4. Its original audio can be played by WPF MediaPlayer
+at 45% volume during the laugh state. Sound is off by default and can be enabled
+using the context menu item “参考视频原声”. The original
+clip is extracted into a content-hashed LocalAppData cache only when sound is
+first played; smoke tests and previews never extract or play audio.
+Frame transitions crossfade for at most 90 ms on a shared canvas. Enhanced motion
+adds only a gentle 1.6-degree sway, 1.2–1.6% squish, and 2-pixel bounce.
+Source motion uses native source frames directly, with no ghosting or extra body
+motion. Rendering follows CompositionTarget.Rendering at the display refresh
+rate, rather than a low-frequency timer. Source clips play once before idle.
+
+Headless QA:
+  Naiwa.exe --smoke-test path\report.json
+  Naiwa.exe --preview path\nine-poses.png
+  Naiwa.exe --render-laugh-frames path\rendered-frames 30
+The last command exports the same default-size geometry used by the app at
+30 fps, plus animation.json with times/source-frame indices. It creates no
+desktop window and never initializes or plays audio. Managed hit-test caches
+store A8 alpha only; only two changing frames are cached in addition to static
+poses, rather than retaining BGRA copies of every video frame.
